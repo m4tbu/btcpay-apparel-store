@@ -1,0 +1,225 @@
+@model BTCPayServer.Plugins.ApparelStore.Models.Product
+@{
+    ViewData["Title"] = "Edit Product";
+    var appId = ViewBag.AppId;
+}
+
+<h1>Edit Product: @Model.Name</h1>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <h2>Product Details</h2>
+        <form method="post" action="@Url.Action("UpdateProduct", new { appId, productId = Model.Id })">
+            <div class="mb-3">
+                <label for="Name" class="form-label">Product Name</label>
+                <input type="text" class="form-control" id="Name" name="Name" value="@Model.Name" required />
+            </div>
+
+            <div class="mb-3">
+                <label for="Description" class="form-label">Description</label>
+                <textarea class="form-control" id="Description" name="Description" rows="4">@Model.Description</textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="BasePrice" class="form-label">Base Price</label>
+                    <input type="number" step="0.01" class="form-control" id="BasePrice" name="BasePrice" value="@Model.BasePrice" required />
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="Currency" class="form-label">Currency</label>
+                    <input type="text" class="form-control" id="Currency" name="Currency" value="@Model.Currency" required />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="PrintfulProductId" class="form-label">Printful Product ID (Optional)</label>
+                <input type="text" class="form-control" id="PrintfulProductId" name="PrintfulProductId" value="@Model.PrintfulProductId" />
+            </div>
+
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="IsActive" name="IsActive" value="true" @(Model.IsActive ? "checked" : "") />
+                <label class="form-check-label" for="IsActive">Product is Active</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Update Product</button>
+            <a href="@Url.Action("Index", new { appId })" class="btn btn-secondary">Back to List</a>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <h2>Product Variants</h2>
+        <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addVariantModal">
+            Add Variant
+        </button>
+
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Size</th>
+                    <th>Color</th>
+                    <th>Price Adj.</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var variant in Model.Variants)
+                {
+                    <tr>
+                        <td>@variant.Size</td>
+                        <td>
+                            <span class="color-indicator" style="background-color: @(variant.ColorHex ?? "#ccc"); width: 20px; height: 20px; display: inline-block; border: 1px solid #ddd;"></span>
+                            @variant.Color
+                        </td>
+                        <td>@variant.PriceAdjustment.ToString("C")</td>
+                        <td>@variant.StockQuantity</td>
+                        <td>
+                            <form method="post" action="@Url.Action("DeleteVariant", new { appId, variantId = variant.Id })" style="display:inline;" onsubmit="return confirm('Delete this variant?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h2>Product Images</h2>
+        <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addImageModal">
+            Add Image
+        </button>
+
+        <div class="row">
+            @foreach (var image in Model.Images.OrderBy(i => i.DisplayOrder))
+            {
+                <div class="col-md-3 mb-3">
+                    <div class="card">
+                        <img src="@image.ImageUrl" class="card-img-top" alt="Product Image" style="height: 200px; object-fit: cover;" />
+                        <div class="card-body">
+                            <p class="card-text">
+                                <small>
+                                    @if (image.IsPrimary)
+                                    {
+                                        <span class="badge bg-primary">Primary</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(image.ColorVariant))
+                                    {
+                                        <span class="badge bg-secondary">@image.ColorVariant</span>
+                                    }
+                                    <br />Order: @image.DisplayOrder
+                                </small>
+                            </p>
+                            <form method="post" action="@Url.Action("DeleteImage", new { appId, imageId = image.Id })" onsubmit="return confirm('Delete this image?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Add Variant Modal -->
+<div class="modal fade" id="addVariantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="@Url.Action("AddVariant", new { appId, productId = Model.Id })">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Product Variant</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="Size" class="form-label">Size</label>
+                        <input type="text" class="form-control" id="Size" name="Size" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Color" class="form-label">Color</label>
+                        <input type="text" class="form-control" id="Color" name="Color" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ColorHex" class="form-label">Color Hex Code</label>
+                        <input type="color" class="form-control" id="ColorHex" name="ColorHex" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="PriceAdjustment" class="form-label">Price Adjustment</label>
+                        <input type="number" step="0.01" class="form-control" id="PriceAdjustment" name="PriceAdjustment" value="0" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="StockQuantity" class="form-label">Stock Quantity</label>
+                        <input type="number" class="form-control" id="StockQuantity" name="StockQuantity" value="999" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="PrintfulVariantId" class="form-label">Printful Variant ID (Optional)</label>
+                        <input type="text" class="form-control" id="PrintfulVariantId" name="PrintfulVariantId" />
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="IsAvailable" name="IsAvailable" value="true" checked />
+                        <label class="form-check-label" for="IsAvailable">Available for Purchase</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Variant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Image Modal -->
+<div class="modal fade" id="addImageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="@Url.Action("AddImage", new { appId, productId = Model.Id })">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Product Image</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="ImageUrl" class="form-label">Image URL</label>
+                        <input type="url" class="form-control" id="ImageUrl" name="ImageUrl" required />
+                        <small class="form-text text-muted">Upload to BTCPayServer Files or use external URL</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ColorVariant" class="form-label">Color Variant (Optional)</label>
+                        <input type="text" class="form-control" id="ColorVariant" name="ColorVariant" />
+                        <small class="form-text text-muted">Show this image for a specific color</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="DisplayOrder" class="form-label">Display Order</label>
+                        <input type="number" class="form-control" id="DisplayOrder" name="DisplayOrder" value="0" />
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="IsPrimary" name="IsPrimary" value="true" />
+                        <label class="form-check-label" for="IsPrimary">Set as Primary Image</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Image</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

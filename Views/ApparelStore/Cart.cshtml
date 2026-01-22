@@ -1,0 +1,161 @@
+@{
+    ViewData["Title"] = "Shopping Cart";
+    var appId = ViewBag.AppId;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Apparel Store</title>
+    <link rel="stylesheet" href="~/apparel-store/store.css" />
+</head>
+<body>
+    <header class="store-header">
+        <div class="container">
+            <h1><a href="@Url.Action("Index", new { appId })">Apparel Store</a></h1>
+            <div class="header-actions">
+                <a href="@Url.Action("Cart", new { appId })" class="cart-link active">
+                    <span class="cart-icon">🛒</span>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1 class="page-title">Shopping Cart</h1>
+
+        <div id="cartContainer">
+            <div id="emptyCart" class="empty-state" style="display: none;">
+                <p>Your cart is empty.</p>
+                <a href="@Url.Action("Index", new { appId })" class="btn btn-primary">Continue Shopping</a>
+            </div>
+
+            <div id="cartContent" style="display: none;">
+                <div class="cart-items" id="cartItems">
+                    <!-- Cart items will be loaded here -->
+                </div>
+
+                <div class="cart-summary">
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span id="cartSubtotal">$0.00</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Total:</span>
+                        <span id="cartTotal">$0.00</span>
+                    </div>
+
+                    <div class="cart-actions">
+                        <a href="@Url.Action("Index", new { appId })" class="btn btn-secondary">Continue Shopping</a>
+                        <a href="@Url.Action("Checkout", new { appId })" class="btn btn-primary">Proceed to Checkout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="store-footer">
+        <div class="container">
+            <p>Powered by BTCPayServer | Pay with Bitcoin</p>
+        </div>
+    </footer>
+
+    <script>
+        const appId = '@appId';
+        const apiBasePath = '/apps/' + appId + '/apparel/api';
+    </script>
+    <script src="~/apparel-store/cart.js"></script>
+    <script>
+        // Load and display cart
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCart();
+        });
+
+        async function loadCart() {
+            const cart = getCart();
+
+            if (cart.length === 0) {
+                document.getElementById('emptyCart').style.display = 'block';
+                document.getElementById('cartContent').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('emptyCart').style.display = 'none';
+            document.getElementById('cartContent').style.display = 'block';
+
+            // Fetch product details for cart items
+            const response = await fetch(apiBasePath + '/cart/items', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(cart)
+            });
+
+            const items = await response.json();
+            displayCartItems(items);
+            updateCartSummary(items);
+        }
+
+        function displayCartItems(items) {
+            const container = document.getElementById('cartItems');
+            container.innerHTML = '';
+
+            items.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'cart-item';
+                itemElement.innerHTML = `
+                    <div class="cart-item-image">
+                        ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.productName}">` : '<div class="no-image">No Image</div>'}
+                    </div>
+                    <div class="cart-item-details">
+                        <h3>${item.productName}</h3>
+                        <p>Color: ${item.color}</p>
+                        <p>Size: ${item.size}</p>
+                    </div>
+                    <div class="cart-item-quantity">
+                        <button onclick="updateQuantity('${item.variantId}', ${item.quantity - 1})">−</button>
+                        <span>${item.quantity}</span>
+                        <button onclick="updateQuantity('${item.variantId}', ${item.quantity + 1})">+</button>
+                    </div>
+                    <div class="cart-item-price">
+                        $${(item.price * item.quantity).toFixed(2)}
+                    </div>
+                    <div class="cart-item-remove">
+                        <button onclick="removeFromCart('${item.variantId}')" class="btn-remove">Remove</button>
+                    </div>
+                `;
+                container.appendChild(itemElement);
+            });
+        }
+
+        function updateCartSummary(items) {
+            const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            document.getElementById('cartSubtotal').textContent = '$' + total.toFixed(2);
+            document.getElementById('cartTotal').textContent = '$' + total.toFixed(2);
+        }
+
+        function updateQuantity(variantId, newQuantity) {
+            if (newQuantity < 1) {
+                removeFromCart(variantId);
+                return;
+            }
+
+            if (newQuantity > 10) {
+                alert('Maximum quantity is 10');
+                return;
+            }
+
+            updateCartItemQuantity(variantId, newQuantity);
+            loadCart();
+        }
+
+        function removeFromCart(variantId) {
+            removeFromCartStorage(variantId);
+            loadCart();
+            updateCartCount();
+        }
+    </script>
+</body>
+</html>

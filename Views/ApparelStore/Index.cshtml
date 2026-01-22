@@ -1,0 +1,101 @@
+@model IEnumerable<BTCPayServer.Plugins.ApparelStore.Models.Product>
+@{
+    ViewData["Title"] = "Shop";
+    var appId = ViewBag.AppId;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Apparel Store</title>
+    <link rel="stylesheet" href="~/apparel-store/store.css" />
+</head>
+<body>
+    <header class="store-header">
+        <div class="container">
+            <h1>Apparel Store</h1>
+            <div class="header-actions">
+                <a href="@Url.Action("Cart", new { appId })" class="cart-link">
+                    <span class="cart-icon">🛒</span>
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2 class="page-title">Our Products</h2>
+
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <p>No products available at the moment. Check back soon!</p>
+            </div>
+        }
+        else
+        {
+            <div class="product-grid">
+                @foreach (var product in Model)
+                {
+                    var primaryImage = product.Images.FirstOrDefault(i => i.IsPrimary) ?? product.Images.FirstOrDefault();
+                    var minPrice = product.BasePrice + (product.Variants.Any() ? product.Variants.Min(v => v.PriceAdjustment) : 0);
+                    var maxPrice = product.BasePrice + (product.Variants.Any() ? product.Variants.Max(v => v.PriceAdjustment) : 0);
+
+                    <div class="product-card">
+                        <a href="@Url.Action("Product", new { appId, productId = product.Id })" class="product-link">
+                            @if (primaryImage != null)
+                            {
+                                <div class="product-image">
+                                    <img src="@primaryImage.ImageUrl" alt="@product.Name" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="product-image product-image-placeholder">
+                                    <span>No Image</span>
+                                </div>
+                            }
+
+                            <div class="product-info">
+                                <h3 class="product-name">@product.Name</h3>
+                                <p class="product-price">
+                                    @if (minPrice == maxPrice)
+                                    {
+                                        <span>@minPrice.ToString("C") @product.Currency</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@minPrice.ToString("C") - @maxPrice.ToString("C") @product.Currency</span>
+                                    }
+                                </p>
+                                @if (!string.IsNullOrEmpty(product.Description))
+                                {
+                                    <p class="product-description">
+                                        @(product.Description.Length > 100 ? product.Description.Substring(0, 100) + "..." : product.Description)
+                                    </p>
+                                }
+                            </div>
+                        </a>
+                    </div>
+                }
+            </div>
+        }
+    </main>
+
+    <footer class="store-footer">
+        <div class="container">
+            <p>Powered by BTCPayServer | Pay with Bitcoin</p>
+        </div>
+    </footer>
+
+    <script src="~/apparel-store/cart.js"></script>
+    <script>
+        // Update cart count on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartCount();
+        });
+    </script>
+</body>
+</html>

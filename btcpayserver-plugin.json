@@ -1,0 +1,12 @@
+{
+  "identifier": "BTCPayServer.Plugins.ApparelStore",
+  "name": "Apparel Store",
+  "version": "1.0.0",
+  "description": "A full-featured e-commerce store for selling dropshipped apparel with product variants, image galleries, shopping cart, and Bitcoin payments via BTCPayServer",
+  "systemPlugin": false,
+  "author": "Your Name",
+  "website": "https://github.com/yourusername/btcpayserver-apparel-store",
+  "dependencies": {
+    "BTCPayServer": "1.13.*"
+  }
+}
